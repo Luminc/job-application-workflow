@@ -62,20 +62,14 @@ The author's own search, over about eleven months:
 | Applications sent | 134 |
 | Invited to an interview | 18 |
 
-Over the last four months, side by side with a commercial auto-matching service:
+Finding more is not the bottleneck: when the search started sending more
+applications, the number of interviews did not go up with it. What finding
+more buys you is choice. Spend it on fewer applications, each one specific.
 
-| | This search | Commercial service |
-|---|---|---|
-| Vacancies seen | 5,098 | 176 |
-| Scored 7/10 or higher | 292 | 41 |
-| Applications sent | 35 | 9 |
-| Interviews | 5 | 1 |
-
-Both convert applications into interviews at a similar rate; this search
-simply finds far more vacancies worth applying to. But finding more is not the
-bottleneck: when the search started sending more applications, the number of
-interviews did not go up with it. What finding more buys you is choice. Spend
-it on fewer applications, each one specific.
+A side note on volume. Over the same four months, a paid auto-matching
+service built for exactly this, with many search loops running, delivered
+176 vacancies; this search saw over 5,000. Setups differ, so it is not a
+controlled comparison, but it was a trickle against a stream.
 
 ## What it does
 
