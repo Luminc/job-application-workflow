@@ -1,0 +1,28 @@
+# Your data. This repo is the engine; keep your profile and applications in a
+# private repo or a private fork (remove these lines there).
+/profile/
+/active/
+/submitted/
+/archive/
+/state/
+/output/
+
+# Secrets
+.env
+
+# Build artefacts
+**/outputs/*.pdf
+.build/
+pack.md
+prompt.md
+*.aux
+*.log
+*.out
+
+# Tooling
+node_modules/
+venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+.claude/settings.local.json

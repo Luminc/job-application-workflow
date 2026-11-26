@@ -1,0 +1,35 @@
+{
+  "name": "job-application-workflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A job search run as a repository: find and score vacancies against your own rules, draft letters you'd actually send, build letter and CV PDFs, and track outcomes.",
+  "license": "MIT",
+  "scripts": {
+    "chrome-search": "node scripts/chrome-fetch.js --search",
+    "chrome-fetch": "node scripts/chrome-fetch.js",
+    "chrome-retriage": "node scripts/chrome-fetch.js --retriage",
+    "score": "node scripts/run-python.js scripts/score.py",
+    "review": "node scripts/run-python.js scripts/score.py --review",
+    "ats-probe": "node scripts/run-python.js scripts/ats_boards.py --probe",
+    "new": "node new-application.js",
+    "prep": "node scripts/prepare-application.js",
+    "evaluate": "node scripts/run-python.js scripts/evaluate_active.py",
+    "evaluate-prompt": "node scripts/run-python.js scripts/evaluate_active.py --prompt-only",
+    "pack": "node scripts/pack.js",
+    "prompt": "node scripts/generate_draft.js",
+    "draft": "node scripts/generate_draft.js --api",
+    "build": "node build-application.js",
+    "build-force": "node build-application.js --rebuild",
+    "build-cv": "node build-cv.js",
+    "check-type": "node scripts/run-python.js scripts/check_typography.py",
+    "doc": "node scripts/build-doc.js",
+    "submit": "node submit-application.js",
+    "outcome": "node manage-outcome.js",
+    "rank": "node scripts/rank-active.js",
+    "dashboard": "node scripts/dashboard.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
+    "dotenv": "^16.0.0"
+  }
+}

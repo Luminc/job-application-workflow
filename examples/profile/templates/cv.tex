@@ -1,0 +1,67 @@
+% CV template (pandoc + lualatex). Defines the macros CV variants use:
+% \cvsection, \cventry, \cvdesc, \cveducation, \cvskill.
+% Name and contact come from profile.json ("sender"); a variant's own
+% frontmatter can override them. `photo:` is optional (path relative to the profile folder).
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+\usepackage[a4paper,left=16mm,right=16mm,top=14mm,bottom=12mm]{geometry}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{calc}
+\usepackage{array}
+\usepackage{microtype}
+\usepackage{hyperref}
+
+\setmainfont{texgyreheros}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold, ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+
+\definecolor{textmain}{HTML}{1a1a1a}
+\definecolor{muted}{HTML}{666666}
+\color{textmain}
+\hypersetup{colorlinks=true, urlcolor=muted, linkcolor=textmain, pdfauthor={$if(name)$$name$$else$$sender.name$$endif$}}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\pagestyle{empty}
+
+\newlength{\leftcol}\setlength{\leftcol}{38mm}
+\newlength{\rightcol}\setlength{\rightcol}{\textwidth-\leftcol}
+
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+\newcommand{\cvsection}[1]{\vspace{5mm}{\fontsize{11}{13}\selectfont\bfseries #1}\par\vspace{2mm}}
+\newcommand{\cventry}[3]{%
+  \noindent\begin{tabular}[t]{@{}p{\leftcol}@{}p{\rightcol}@{}}
+    \textcolor{muted}{#1} & \textbf{#2}\quad #3
+  \end{tabular}\par\vspace{1mm}}
+\newcommand{\cvdesc}[1]{\noindent\hspace{\leftcol}\parbox[t]{\rightcol}{#1}\par\vspace{0.6mm}}
+\newcommand{\cveducation}[2]{%
+  \noindent\begin{tabular}[t]{@{}p{\leftcol}@{}p{\rightcol}@{}}\textcolor{muted}{#1} & #2\end{tabular}\par\vspace{0.6mm}}
+\newcommand{\cvskill}[2]{%
+  \noindent\begin{tabular}[t]{@{}p{\leftcol}@{}p{\rightcol}@{}}#1 & #2\end{tabular}\par\vspace{0.6mm}}
+
+\begin{document}
+\fontsize{9.5}{14}\selectfont
+
+\noindent
+$if(photo)$
+\begin{minipage}[t]{\leftcol}\vspace{0pt}
+\begin{tikzpicture}\clip (0,0) circle (14mm);\node at (0,0) {\includegraphics[width=28mm]{$photo$}};\end{tikzpicture}
+\end{minipage}%
+\begin{minipage}[t]{\rightcol}\vspace{0pt}
+$else$
+\begin{minipage}[t]{\textwidth}\vspace{0pt}
+$endif$
+{\fontsize{22}{26}\selectfont $if(name)$$name$$else$$sender.name$$endif$}\par\vspace{2mm}
+$if(title)${\fontsize{11}{14}\selectfont $title$}\par\vspace{3mm}$endif$
+$if(summary)$$summary$\par\vspace{2mm}$endif$
+{\fontsize{8.5}{12}\selectfont\color{muted}
+$if(email)$$email$$else$$sender.email$$endif$\quad\textperiodcentered\quad $if(phone)$$phone$$else$$sender.phone$$endif$$if(sender.website)$\quad\textperiodcentered\quad $sender.website$$endif$}
+\end{minipage}
+
+$body$
+
+\end{document}

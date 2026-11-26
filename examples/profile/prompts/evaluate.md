@@ -1,0 +1,7 @@
+- Editorial, content-design and CMS roles with real substance — not pure marketing, not pure execution.
+- Preferred: archives, libraries, museums, publishers, public information, education, foundations. A commercial employer is fine when the work itself fits.
+- Hours: 28–32 ideal; full-time acceptable when the role is a clear step up. Judge salary on the full-time equivalent; floor around €3,400 gross a month for 32 hours.
+- Freelance content, CMS or migration assignments are welcome (day rate from €400).
+- Room for ownership: a role where both the writing and the structure behind it count.
+- A bridge role is acceptable with a genuine learning or growth component.
+- NOT: junior positions, software development, sales, news reporting.

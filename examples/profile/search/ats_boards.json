@@ -1,0 +1,8 @@
+{
+  "_about": "Public ATS boards to follow with npm run score -- --source ats. Providers: greenhouse, lever, workable, recruitee, ashby. Find a slug with: python scripts/ats_boards.py --probe <slug>. The boards below are placeholders: replace them with employers you follow.",
+  "boards": [
+    { "name": "Example Museum", "provider": "recruitee", "slug": "examplemuseum" }
+  ],
+  "local_hints": ["utrecht", "amersfoort", "netherlands", "nederland"],
+  "remote_hints": ["netherlands", "nederland", "europe", "emea"]
+}

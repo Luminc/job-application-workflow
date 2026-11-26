@@ -1,0 +1,65 @@
+% Cover letter template (pandoc + lualatex).
+% Your look lives here: fonts, margins, sender block. Sender details come from
+% profile.json ("sender") as sender.name, sender.email etc.; the letter's own frontmatter supplies
+% recipient, subject, salutation and language.
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{fontspec}
+% Hyphenation and \today follow this language. For letters in more than one
+% language, keep a template per language or set `closing:` in the frontmatter.
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+\usepackage{microtype}
+\usepackage[a4paper,left=22mm,right=22mm,top=18mm,bottom=18mm]{geometry}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+% TeX Gyre Heros ships with TeX Live and MiKTeX (loaded by file name, so it works
+% without a system install). Replace with your own font.
+\setmainfont{texgyreheros}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold, ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+
+\definecolor{muted}{gray}{0.35}
+\hypersetup{colorlinks=true, urlcolor=muted, linkcolor=muted, pdfauthor={$sender.name$}}
+
+\pagestyle{empty}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{8pt}
+
+\begin{document}
+\fontsize{10}{15}\selectfont
+
+\hfill
+\begin{minipage}[t]{0.45\textwidth}
+\raggedleft
+{\fontsize{12}{16}\selectfont $sender.name$}\\
+$for(sender.address)$
+$sender.address$\\
+$endfor$
+$sender.email$\\
+$sender.phone$
+\end{minipage}
+
+\vspace{2em}
+
+$for(recipient)$
+$recipient$\\
+$endfor$
+
+\vspace{1.5em}
+
+{\color{muted}\today}\\
+\textbf{$subject$}
+
+\vspace{1em}
+
+$salutation$,
+
+$body$
+
+$if(closing)$$closing$,$else$Kind regards,$endif$
+
+\vspace{2.5em}
+
+$sender.name$
+
+\end{document}

@@ -1,0 +1,17 @@
+{
+  "_about": "Backstop for prompts/triage.md. A title matching never_reject is kept even when the model rejects it, unless the rule is listed in rules_over_keep. Keep the patterns narrow: 'museum' would also keep the museum's dishwasher. Regular expressions, case-insensitive.",
+  "never_reject": [
+    "content(?!\\s*-?\\s*market)",
+    "editor",
+    "redact",
+    "copy",
+    "writer",
+    "\\bCMS\\b",
+    "archive|archief",
+    "librar|bibliothe",
+    "collection|collectie",
+    "plain language|taalniveau",
+    "migration|migratie"
+  ],
+  "rules_over_keep": ["junior_internship", "gig", "out_of_region"]
+}

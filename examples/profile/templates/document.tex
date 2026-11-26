@@ -1,0 +1,41 @@
+% Working-document template for npm run doc (proposals, notes, plans).
+% Frontmatter: title, subject, recipient (list), date (optional).
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+\usepackage[a4paper,left=22mm,right=22mm,top=18mm,bottom=20mm]{geometry}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{longtable,booktabs,array}
+\usepackage{hyperref}
+
+\setmainfont{texgyreheros}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold, ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+\definecolor{muted}{gray}{0.35}
+\hypersetup{colorlinks=true, urlcolor=muted, linkcolor=muted, pdfauthor={$sender.name$}}
+
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\titleformat{\section}{\large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{}{0em}{}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\begin{document}
+\fontsize{10}{15}\selectfont
+
+{\color{muted}$sender.name$ \quad\textperiodcentered\quad $sender.email$}
+
+\vspace{1.5em}
+$if(title)${\fontsize{18}{22}\selectfont $title$}\par\vspace{0.5em}$endif$
+$if(subject)$$subject$\par$endif$
+$if(recipient)${\color{muted}For: $for(recipient)$$recipient$$sep$, $endfor$}\par$endif$
+{\color{muted}$if(date)$$date$$else$\today$endif$}
+
+\vspace{1em}
+
+$body$
+
+\end{document}

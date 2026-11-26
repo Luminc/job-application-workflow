@@ -1,0 +1,30 @@
+% Optional statement page (statement-input.md in an application folder):
+% a separate answer per requirement, appended to the letter PDF as page 2.
+\documentclass[10pt,a4paper]{article}
+
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setdefaultlanguage{english}
+\usepackage[a4paper,left=22mm,right=22mm,top=18mm,bottom=18mm]{geometry}
+\usepackage{microtype}
+\usepackage{titlesec}
+\usepackage{enumitem}
+
+\setmainfont{texgyreheros}[Extension=.otf, UprightFont=*-regular, BoldFont=*-bold, ItalicFont=*-italic, BoldItalicFont=*-bolditalic]
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\titleformat{\section}{\normalsize\bfseries}{}{0em}{}
+\titlespacing*{\section}{0pt}{1em}{0.3em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\pagestyle{empty}
+
+\begin{document}
+\fontsize{9.5}{14}\selectfont
+
+{\fontsize{12}{16}\selectfont $if(title)$$title$$else$Statement$endif$}\hfill $sender.name$
+
+\vspace{1em}
+
+$body$
+
+\end{document}
