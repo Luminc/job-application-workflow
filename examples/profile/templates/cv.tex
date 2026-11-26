@@ -5,8 +5,13 @@
 \documentclass[10pt,a4paper]{article}
 
 \usepackage{fontspec}
-\usepackage{polyglossia}
-\setdefaultlanguage{english}
+% The language comes from the document (lang:, or language: in a letter),
+% else from profile.json "language". It sets hyphenation and \today.
+$if(babel-lang)$
+\usepackage[$babel-lang$]{babel}
+$else$
+\usepackage[english]{babel}
+$endif$
 \usepackage[a4paper,left=16mm,right=16mm,top=14mm,bottom=12mm]{geometry}
 \usepackage{xcolor}
 \usepackage{graphicx}

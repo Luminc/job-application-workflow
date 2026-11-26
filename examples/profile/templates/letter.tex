@@ -5,10 +5,13 @@
 \documentclass[10pt,a4paper]{article}
 
 \usepackage{fontspec}
-% Hyphenation and \today follow this language. For letters in more than one
-% language, keep a template per language or set `closing:` in the frontmatter.
-\usepackage{polyglossia}
-\setdefaultlanguage{english}
+% The language comes from the document (lang:, or language: in a letter),
+% else from profile.json "language". It sets hyphenation and \today.
+$if(babel-lang)$
+\usepackage[$babel-lang$]{babel}
+$else$
+\usepackage[english]{babel}
+$endif$
 \usepackage{microtype}
 \usepackage[a4paper,left=22mm,right=22mm,top=18mm,bottom=18mm]{geometry}
 \usepackage{xcolor}

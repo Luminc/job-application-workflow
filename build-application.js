@@ -95,6 +95,18 @@ function getPdfOverflow(filePath) {
 
 const letterFile = (companySlug) => `${companySlug}_${P.fileName()}.pdf`;
 
+// The application's language (`language:` in letter-input.md, e.g. "nl" or
+// "de-AT"), so the letter, statement and CV hyphenate and date in that language.
+// Falls back to profile.json "language".
+function letterLanguage(appDir) {
+  try {
+    const m = fs.readFileSync(path.join(appDir, 'letter-input.md'), 'utf8').match(/^language:\s*["']?([A-Za-z-]+)/m);
+    return m ? m[1] : null;
+  } catch {
+    return null;
+  }
+}
+
 function buildLetter(appDir, companySlug, forceRebuild = false) {
   const letterInput = path.join(appDir, 'letter-input.md');
   const outputDir = path.join(appDir, 'outputs');
@@ -120,7 +132,7 @@ function buildLetter(appDir, companySlug, forceRebuild = false) {
   try {
     execSync(
       `pandoc "${letterInput}" -f markdown+hard_line_breaks -o "${letterOutput}" ` +
-      `--template="${templatePath}" --metadata-file="${P.pandocMetadataFile()}" ` +
+      `--template="${templatePath}" --metadata-file="${P.pandocMetadataFile(letterLanguage(appDir))}" ` +
       `--resource-path="${P.PROFILE_DIR}" --pdf-engine=lualatex`,
       { cwd: appDir, stdio: 'inherit' }
     );
@@ -165,7 +177,7 @@ function buildStatement(appDir, forceRebuild = false) {
   try {
     execSync(
       `pandoc "${input}" -f markdown+hard_line_breaks -o "${output}" --template="${templatePath}" ` +
-      `--metadata-file="${P.pandocMetadataFile()}" --pdf-engine=lualatex`,
+      `--metadata-file="${P.pandocMetadataFile(letterLanguage(appDir))}" --pdf-engine=lualatex`,
       { cwd: appDir, stdio: 'inherit' }
     );
     if (!fs.existsSync(output) || fs.statSync(output).size < 1024) {
@@ -255,7 +267,7 @@ function buildCV(appDir, companySlug, forceRebuild = false) {
     // Run from the profile folder, so `photo: photos/me.jpg` in a variant resolves there.
     execSync(
       `pandoc "${cvInput}" -o "${cvOutput}" --template="${template}" ` +
-      `--metadata-file="${P.pandocMetadataFile()}" --pdf-engine=lualatex`,
+      `--metadata-file="${P.pandocMetadataFile(letterLanguage(appDir))}" --pdf-engine=lualatex`,
       { cwd: P.PROFILE_DIR, stdio: 'inherit' }
     );
 

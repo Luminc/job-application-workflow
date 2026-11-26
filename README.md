@@ -2,17 +2,41 @@
 
 Job applications run as a repository: finding vacancies, judging them, writing
 letters, building CVs and documents, tracking outcomes. Operated together with
-an AI agent (built for [Claude Code](https://claude.com/claude-code)).
+an AI agent (built for [Claude Code](https://claude.com/claude-code)). Any
+sector, any country, any language.
 
-Most job tools optimise for volume: more sources, more matches, more
-applications sent automatically. This kit does the opposite. It finds fewer
-vacancies, judges them against **your own written rules**, and helps you write
-letters that are true and specific enough to send. You make every decision; the
-agent does the reading, sorting, drafting and typesetting.
+You make every decision; the agent does the reading, sorting, drafting and
+typesetting. Everything it judges by is written down by you, and gets sharper
+every time it gets something wrong.
 
 It grew out of a year of one person's real search. The engine is generic. What
 made it work was the profile: written-down evidence, claim limits, decision
 rules and a style guide that every letter is held to.
+
+## What sets it apart
+
+- **Specific to you, not to a job title.** Vacancies are judged on what
+  matters to you: the work itself, hours, salary, commute distance, sector.
+  Hybrid roles go by a different title at every employer; judging the full
+  text against your own rules still finds them.
+- **Triage before scoring.** A cheap pass over the job cards rejects a title
+  only when it breaks one of your explicit rules, and every rejection carries a
+  rule code you can audit and reverse. Everything else is read in full and
+  scored. You can search wide, pay little and miss less.
+- **Prompts that improve with use.** Scoring, triage and letter rules are plain
+  files in your profile. When the model gets something wrong, you write down
+  why, and the next run knows. Letters that led to interviews become examples
+  for the next one.
+- **Private and public kept apart.** The engine is code only. Your profile,
+  applications and history live in a separate workspace, so you can take
+  updates and contribute fixes without untangling anything personal.
+- **Multilingual.** Write each application in the language of the vacancy.
+  Letters, CVs and documents hyphenate and date in that language; prompts and
+  style rules are yours to write in whatever language you work in.
+- **Your identity, typeset properly.** Letters, CVs and any other document
+  (a proposal, a contract, meeting notes) come from your own LaTeX templates:
+  one consistent personal or brand identity, print-quality PDFs, one page
+  enforced where it matters, typography checked.
 
 <table>
   <tr>
@@ -44,6 +68,8 @@ write       pack / draft    vacancy + research + CV + style rules + earlier lett
 build       build           letter and CV PDFs with your own LaTeX templates,
                             one page enforced, typography checked
 track       submit/outcome  pending -> invited / rejected / withdrawn, or parked
+document    doc             any markdown file -> PDF in your house style
+                            (proposals, contracts, notes)
 ```
 
 ## Why search through your own browser
