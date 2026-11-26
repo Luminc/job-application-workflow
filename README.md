@@ -252,6 +252,13 @@ Before opening a pull request, check the diff for anything personal: names,
 addresses, real employers from your own search. Personal data belongs in the
 workspace, never in the engine or `examples/`.
 
+## Support
+
+This project is free and stays free. If it helped your search, you can
+[buy me a coffee on Ko-fi](https://ko-fi.com/luminc). Contributions to the
+code, a portal for your country, or a note on what worked for you are just as
+welcome.
+
 ## License
 
 MIT. Use it, change it, share it, sell it. Just keep the license file in your
