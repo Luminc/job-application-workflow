@@ -306,6 +306,13 @@ def estimate_distance_km(location: str) -> float | None:
         return None  # transient failure -- don't cache, retry next run
 
 
+def caller_path(value: str) -> Path:
+    """A path from the command line, relative to where the command was typed
+    (CALLER_CWD, set by run-python.js), not to the engine folder."""
+    p = Path(value)
+    return p if p.is_absolute() else Path(os.environ.get("CALLER_CWD", os.getcwd())) / p
+
+
 def load_matches_file(path: Path) -> tuple[list[dict], dict]:
     """Read a matches file: state/matches.json from chrome-fetch.js, or any
     export in the same shape (e.g. from a job-board connector). Listings arrive
@@ -1116,7 +1123,7 @@ def _run(args):
     elif hand_picked:
         raw_urls = [args.url] if args.url else []
         if args.urls_file:
-            path = Path(args.urls_file)
+            path = caller_path(args.urls_file)
             if not path.exists():
                 print(f"\n[!] File not found: {path}")
                 sys.exit(1)
@@ -1126,7 +1133,7 @@ def _run(args):
         listings = [{"title": "Hand-picked URL", "url": u, "source": "url"} for u in raw_urls]
     else:
         if args.source in ("matches", "all"):
-            path = Path(args.matches_file) if args.matches_file else MATCHES_FILE
+            path = caller_path(args.matches_file) if args.matches_file else MATCHES_FILE
             if not path.exists():
                 print(f"\n[matches] {path.name} not found — run npm run chrome-search first.")
                 if args.source == "matches":

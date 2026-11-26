@@ -10,7 +10,11 @@ if (args.length === 0) {
 }
 
 const python = resolvePython();
-const result = spawnSync(python, args, { cwd: projectRoot, stdio: 'inherit' });
+// The script runs from the engine root; CALLER_CWD keeps the folder the
+// command was typed in, so relative paths on the command line still work.
+const result = spawnSync(python, args, {
+  cwd: projectRoot, stdio: 'inherit', env: { ...process.env, CALLER_CWD: process.cwd() },
+});
 
 if (result.error) {
   console.error(`\n❌ Failed to launch Python (${python}): ${result.error.message}`);
