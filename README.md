@@ -66,7 +66,7 @@ Finding more is not the bottleneck: when the search started sending more
 applications, the number of interviews did not go up with it. What finding
 more buys you is choice. Spend it on fewer applications, each one specific.
 
-A side note on volume. Over the same four months, a paid auto-matching
+A side note on volume. Over the last four months, a paid auto-matching
 service built for exactly this, with many search loops running, delivered
 176 vacancies; this search saw over 5,000. Setups differ, so it is not a
 controlled comparison, but it was a trickle against a stream.
