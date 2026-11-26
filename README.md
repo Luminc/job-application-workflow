@@ -14,6 +14,19 @@ It grew out of a year of one person's real search. The engine is generic. What
 made it work was the profile: written-down evidence, claim limits, decision
 rules and a style guide that every letter is held to.
 
+<table>
+  <tr>
+    <td><img src="docs/example-letter.png" alt="Example cover letter built from the example profile" width="400"></td>
+    <td><img src="docs/example-cv.png" alt="Example one-page CV built from the example profile" width="400"></td>
+  </tr>
+  <tr>
+    <td align="center"><sub>Letter, from <code>examples/application/Example_Library</code></sub></td>
+    <td align="center"><sub>CV, from <code>examples/profile/cv/content-editor.md</code></sub></td>
+  </tr>
+</table>
+
+<sub>Built by <code>npm run build Example_Library</code> with the fictitious example profile. The design is a template in your profile; change it to anything LaTeX can do.</sub>
+
 ## What it does
 
 ```
