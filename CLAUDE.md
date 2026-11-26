@@ -25,7 +25,7 @@ their own domain (identity, evidence, claim limits, letter style).
 | `<profile>/warehouse.md` | Every experience block; the only source of claims |
 | `<profile>/cv/*.md` | CV variants; `cv/README.md` says which one when |
 | `<profile>/prompts/` | `scoring.md`, `triage.md`, `metadata.md`, `evaluate.md` |
-| `<profile>/search/` | `queries.json`, `triage.json`, `ats_boards.json` |
+| `<profile>/search/` | `queries.json`, `triage.json`, `ats_boards.json`, `portals.json` |
 | `<profile>/templates/` | `letter.tex`, `cv.tex`, `document.tex`, `statement.tex` |
 | `<profile>/memory/` | Status, strategy and lessons the agent keeps between sessions |
 | `active/<Org>/` | One application: `vacancy.md`, `letter-input.md`, `outputs/` |
@@ -35,7 +35,8 @@ their own domain (identity, evidence, claim limits, letter style).
 ## Pipeline
 
 ```
-npm run chrome-search        find: Indeed/LinkedIn (+ optional NVB) -> title triage -> full texts -> state/matches.json
+npm run chrome-search        find: Indeed/LinkedIn (+ community portals, optional NVB) -> title triage -> full texts -> state/matches.json
+npm run portals -- "<term>"  check the configured community portals (scripts/portals.js)
 npm run score                score every new vacancy, then review y/n/later -> active/<Org>/
 npm run evaluate             deep fit check per active folder (deep_evaluation.md)
 npm run pack <Org>           everything a chat needs to write the letter, on the clipboard

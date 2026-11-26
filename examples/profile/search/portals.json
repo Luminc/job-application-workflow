@@ -1,0 +1,7 @@
+{
+  "_readme": "Job boards from github.com/ai-job-search-dev/community-portals. Needs Bun and a clone of that repo; add \"portals\" to search.platforms in profile.json. Each key under portals is a portal folder name; args become CLI flags (see the portal's SKILL.md); terms default to the queries.json preset. Details: scripts/portals.js.",
+  "dir": "../community-portals/portals",
+  "portals": {
+    "linkedin-search": { "args": { "location": "Utrecht, Netherlands" }, "limit": 50 }
+  }
+}

@@ -55,8 +55,9 @@ rules and a style guide that every letter is held to.
 
 ```
 find        chrome-search   Indeed + LinkedIn through your own logged-in browser
-                            (Claude in Chrome), LinkedIn's public pages, optional
-                            Nationale Vacaturebank (NL), public ATS boards
+                            (Claude in Chrome), LinkedIn's public pages, any board
+                            from community-portals, optional Nationale
+                            Vacaturebank (NL), public ATS boards
 sieve       triage          one cheap model call per 40 job cards: reject only on
                             explicit rules, calibrated by what you chose before
 score       score           full text vs. your scoring prompt, home distance
@@ -80,6 +81,25 @@ coordinator" at the next. The search here uses your own search terms on the
 platforms themselves, reads the full text and judges it against your rules.
 It covers far fewer sources than an aggregator. For one person's search, the
 results can be better.
+
+## Job boards for your country
+
+The built-in search covers Indeed and LinkedIn everywhere. For local boards,
+it uses [community-portals](https://github.com/ai-job-search-dev/community-portals):
+small command-line tools, one per job board, written and maintained by the
+people who use them (Denmark, Brazil, Switzerland, the US and more, growing).
+They all share one contract, so any of them plugs straight into the search
+round, with the same triage, scoring and review as everything else.
+
+```sh
+git clone https://github.com/ai-job-search-dev/community-portals ../community-portals
+# install Bun (https://bun.sh), then list the boards you want in
+# <profile>/search/portals.json and add "portals" to search.platforms
+npm run portals -- "web editor"     # check: each portal, a few results
+```
+
+Missing your board? Write a portal for it there; everyone using either project
+benefits.
 
 ## Quick start
 
@@ -151,6 +171,7 @@ Or simply ask the agent: "run a search round and show me what's worth reading".
 | `prompts/triage.md` | When a job card may be rejected on its title alone (rule codes) |
 | `prompts/metadata.md` | Which CV variant fits which role; how to write the email hook |
 | `search/queries.json` | Search terms per platform; quick, full and deep presets |
+| `search/portals.json` | Which community-portals boards to search, with their flags |
 | `templates/` | Your letter, CV and document design |
 | `memory/` | What the agent should remember between sessions |
 

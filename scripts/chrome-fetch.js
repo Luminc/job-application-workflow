@@ -39,6 +39,7 @@ const os = require('os');
 const path = require('path');
 
 const P = require('../lib/profile.js');
+const portals = require('./portals.js');
 const ROOT = P.ROOT;
 const SEARCH = P.profile().search || {};
 // The API key is only for the triage call, so it is read from .env into a
@@ -163,7 +164,19 @@ function vacancyId(url) {
   if (li) return `linkedin:${li[1]}`;
   const nvb = url.match(/nationalevacaturebank\.nl\/vacature\/([0-9a-f-]{36})/i);
   if (nvb) return `nvb:${nvb[1].toLowerCase()}`;
-  return null;
+  return urlId(url);
+}
+
+// Any other job page (community portals, ATS boards, own links) is known by
+// its URL without tracking parameters and fragment.
+const TRACKING = /^(utm_|ref$|refid$|trackingid$|source$|src$|fbclid$|gclid$)/i;
+function urlId(url) {
+  let u;
+  try { u = new URL(String(url).trim()); } catch { return null; }
+  if (!/^https?:$/.test(u.protocol)) return null;
+  for (const k of [...u.searchParams.keys()]) if (TRACKING.test(k)) u.searchParams.delete(k);
+  const query = u.searchParams.toString();
+  return `url:${u.host.toLowerCase().replace(/^www\./, '')}${u.pathname.replace(/\/+$/, '')}${query ? `?${query}` : ''}`;
 }
 
 // A card's raw ID as the snippet returned it; anything else is rejected
@@ -177,11 +190,17 @@ function cardId(platform, raw) {
   if (platform === 'Indeed' && /^[0-9a-f]{16}$/i.test(v) && !placeholder) return `indeed:${v.toLowerCase()}`;
   if (platform === 'LinkedIn' && /^\d{6,}$/.test(v)) return `linkedin:${v}`;
   if (platform === 'NVB' && /^[0-9a-f-]{36}$/i.test(v)) return `nvb:${v.toLowerCase()}`;
+  // Community portals: the card's URL is its identity (a LinkedIn URL from a
+  // portal still dedups against the LinkedIn route).
+  if (PORTAL_NAMES.has(platform)) return vacancyId(v);
   return null;
 }
 
 function canonicalUrl(id) {
-  const [kind, v] = id.split(':');
+  const i = id.indexOf(':');
+  const kind = id.slice(0, i);
+  const v = id.slice(i + 1);
+  if (kind === 'url') return `https://${v}`;
   if (kind === 'indeed') return `https://${INDEED_DOMAIN}/viewjob?jk=${v}`;
   if (kind === 'nvb') return `https://www.nationalevacaturebank.nl/vacature/${v}`;
   return `https://www.linkedin.com/jobs/view/${v}/`;
@@ -296,6 +315,10 @@ function windowDays(lastIso, explicit) {
 
 const PLATFORM_KEYS = { indeed: 'Indeed', linkedin: 'LinkedIn', nvb: 'NVB' };
 const PLATFORM_ORDER = ['Indeed', 'LinkedIn', 'NVB'];
+// Community portals (scripts/portals.js), enabled with "portals" in
+// search.platforms; each configured portal is a platform of its own.
+const PORTALS = portals.config();
+const PORTAL_NAMES = new Set(Object.keys(PORTALS.portals));
 // Platforms read through the extension; all of them blocked = Chrome is down.
 const CHROME_PLATFORMS = ['Indeed', 'LinkedIn'];
 
@@ -319,7 +342,7 @@ function staleTerms(state, terms, platforms) {
 function searchTerms(argv) {
   const perPlatform = (list) => Object.fromEntries(Object.keys(PLATFORM_KEYS).map((k) => [k, list]));
   const terms = argValues(argv, '--term');
-  if (terms.length) return { terms: perPlatform(terms), label: `--term (${terms.length})` };
+  if (terms.length) return { terms: { ...perPlatform(terms), ...portalTerms(terms) }, label: `--term (${terms.length})` };
   const preset = argValue(argv, '--queries') || 'full';
   const presets = readJson(QUERIES_FILE, null);
   const value = presets && presets[preset];
@@ -327,8 +350,22 @@ function searchTerms(argv) {
     console.error(`[error] Preset "${preset}" not found in ${QUERIES_FILE} (quick|full|deep).`);
     process.exit(1);
   }
-  if (Array.isArray(value)) return { terms: perPlatform(value), label: preset };
-  return { terms: Object.fromEntries(Object.keys(PLATFORM_KEYS).map((k) => [k, value[k] || []])), label: preset };
+  if (Array.isArray(value)) return { terms: { ...perPlatform(value), ...portalTerms(value) }, label: preset };
+  return {
+    terms: { ...Object.fromEntries(Object.keys(PLATFORM_KEYS).map((k) => [k, value[k] || []])), ...portalTerms(value) },
+    label: preset,
+  };
+}
+
+// Terms per portal: its own "terms" in portals.json, else the preset's key
+// with the portal's name, else the preset's "portals" list, else the preset
+// itself when it is one list for everything.
+function portalTerms(value) {
+  const out = {};
+  for (const [name, cfg] of Object.entries(PORTALS.portals)) {
+    out[name] = (cfg && cfg.terms) || (Array.isArray(value) ? value : value[name] || value.portals || []);
+  }
+  return out;
 }
 
 function searchUrls(terms, platforms, pages, state, explicitDays) {
@@ -371,6 +408,13 @@ function searchUrls(terms, platforms, pages, state, explicitDays) {
     // the edge of the search window, so --pages does not apply.
     for (const term of (terms.nvb || []).filter(Boolean)) {
       out.push({ platform: 'NVB', term, page: 1, days: daysFor('NVB', term), url: null });
+    }
+  }
+  if (platforms.includes('portals')) {
+    for (const name of PORTAL_NAMES) {
+      for (const term of (terms[name] || []).filter(Boolean)) {
+        out.push({ platform: name, term, page: 1, days: daysFor(name, term), url: null });
+      }
     }
   }
   // Platform by platform, so a wall on one platform skips its remaining
@@ -1100,7 +1144,9 @@ async function main() {
   console.log(`  models: cards ${cardsModel}, details ${detailModel}${effort ? `, effort ${effort}` : ''}`);
   if (urls.length) console.log(`  own URLs: ${urls.length}`);
   if (plan) {
-    const counts = plan.platforms.map((k) => `${PLATFORM_KEYS[k] || k} ${(plan.terms[k] || []).length}`).join(', ');
+    const counts = plan.platforms.map((k) => (k === 'portals'
+      ? `portals ${[...PORTAL_NAMES].reduce((n, p) => n + (plan.terms[p] || []).length, 0)}`
+      : `${PLATFORM_KEYS[k] || k} ${(plan.terms[k] || []).length}`)).join(', ');
     console.log(`  search round: ${plan.label} — terms: ${counts}; ${plan.pages} page(s) per term; ` +
                 `${cardBatches.length} card session(s) in Chrome, the rest without a browser`);
     console.log(`  search window: ${plan.windows.join('/') || '-'} days (per term, since the last successful round), max ${maxDetails} detail pages in Chrome`);
@@ -1227,6 +1273,34 @@ async function main() {
     console.log(`  ${n} new card(s), ${mins} min${failed ? `; ${failed} term(s) failed` : ''}`);
   }
 
+  // 1c. Community portals: each runs its own CLI, no browser and no cost.
+  const portalPages = list.filter((s) => PORTAL_NAMES.has(s.platform));
+  if (portalPages.length && !portals.bunAvailable()) {
+    console.error('[portals] bun not found (https://bun.sh); portal searches skipped and kept for next run.');
+    portalPages.forEach((s) => { pageStats.get(s.nr).status = 'skipped'; });
+  } else if (portalPages.length) {
+    const t0 = Date.now();
+    console.log(`[portals] ${portalPages.length} search(es) on ${new Set(portalPages.map((s) => s.platform)).size} portal(s) ...`);
+    let n = 0;
+    const failed = [];
+    for (const s of portalPages) {
+      const cfg = PORTALS.portals[s.platform] || {};
+      const r = portals.search(s.platform, s.term, s.days, { args: cfg.args, limit: cfg.limit || 50 });
+      const st = pageStats.get(s.nr);
+      if (r.status !== 200) { failed.push(`${s.platform} "${s.term}": ${r.error || r.status}`); continue; }
+      st.status = r.results.length ? 'ok' : 'empty';
+      for (const x of r.results) {
+        if (addCard(s.platform, st, s, [x.url, x.title, x.company, x.location])) n += 1;
+        const id = cardId(s.platform, x.url);
+        if (id && cards.has(id) && !cards.get(id).portalId) Object.assign(cards.get(id), { portalId: x.id || x.url, cardUrl: x.url });
+      }
+      await sleep(LINKEDIN_GUEST_DELAY_MS);
+    }
+    const mins = ((Date.now() - t0) / 60000).toFixed(1);
+    console.log(`  ${n} new card(s), ${mins} min${failed.length ? `; ${failed.length} failed` : ''}`);
+    for (const f of failed) console.error(`      ${f}`);
+  }
+
   // Batches are appended to while iterating: a wall the user solved queues a
   // retry of the unread pages right after the current batch.
   for (const [i, b] of cardBatches.entries()) {
@@ -1316,6 +1390,24 @@ async function main() {
     if (!job || fetched.has(c.id)) continue;
     fetched.add(c.id);
     merged.jobs.push({ ...job, job_title: job.title, search_id: 'manual', cv_variant: '', source: 'nvb' });
+  }
+  // Portals: the full text through the portal's own detail command.
+  const portalKeep = keep.filter((c) => PORTAL_NAMES.has(c.platform) && !fetched.has(c.id));
+  if (portalKeep.length) {
+    console.log(`\n[portals] ${portalKeep.length} vacancies via the portal detail command ...`);
+    let ok = 0;
+    for (const c of portalKeep) {
+      const r = portals.detail(c.platform, c.portalId || canonicalUrl(c.id));
+      if (r.job) {
+        fetched.add(c.id);
+        merged.jobs.push({ ...r.job, url: c.cardUrl || r.job.url,
+          title: r.job.title || c.title, company: r.job.company || c.company, location: r.job.location || c.location,
+          job_title: r.job.title || c.title, search_id: 'manual', cv_variant: '', source: `portal:${c.platform}` });
+        ok += 1;
+      }
+      await sleep(LINKEDIN_GUEST_DELAY_MS);
+    }
+    console.log(`  ${ok} fetched${portalKeep.length - ok ? `, ${portalKeep.length - ok} failed (next run)` : ''}`);
   }
   if (cards.size) {
     console.log(`\n[triage] ${cards.size} new cards: ${keep.length} kept, ${decided.length - keep.length} rejected` +
@@ -1503,4 +1595,4 @@ async function main() {
 }
 
 if (require.main === module) main();
-else module.exports = { triage, triageRules, triagedEntries, nvbById, chromeRunning, cardId, canonicalUrl, searchUrls, linkedinGuest, linkedinGuestSearch, applicationIds, triageExamples, nvbSearch };
+else module.exports = { urlId, vacancyId, triage, triageRules, triagedEntries, nvbById, chromeRunning, cardId, canonicalUrl, searchUrls, linkedinGuest, linkedinGuestSearch, applicationIds, triageExamples, nvbSearch };
