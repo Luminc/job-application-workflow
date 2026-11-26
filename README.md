@@ -101,6 +101,12 @@ npm run portals -- "web editor"     # check: each portal, a few results
 Missing your board? Write a portal for it there; everyone using either project
 benefits.
 
+Boards and employers that publish an **RSS feed** need no portal: list the
+feed in `<profile>/search/feeds.json` and it is read once per round, triaged on
+its titles, and only what passes is opened for the full text. Check a site's
+terms first: some forbid automated reading of their collection, and a portal
+or feed should never work around that.
+
 ## Quick start
 
 Requirements: Node 18+, Python 3.10+, [pandoc](https://pandoc.org) and a LaTeX
@@ -172,6 +178,7 @@ Or simply ask the agent: "run a search round and show me what's worth reading".
 | `prompts/metadata.md` | Which CV variant fits which role; how to write the email hook |
 | `search/queries.json` | Search terms per platform; quick, full and deep presets |
 | `search/portals.json` | Which community-portals boards to search, with their flags |
+| `search/feeds.json` | RSS feeds of job boards or employers |
 | `templates/` | Your letter, CV and document design |
 | `memory/` | What the agent should remember between sessions |
 

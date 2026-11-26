@@ -1,0 +1,14 @@
+{
+  "_readme": "RSS feeds of job boards or employers, read once per search round (scripts/feeds.js). Check each site's terms before adding its feed. Add \"feeds\" to search.platforms in profile.json. Every key under feeds is a name you choose; only url is required.",
+  "feeds": {},
+  "_example": {
+    "museum-jobs": {
+      "url": "https://example.org/vacancies/feed/",
+      "title_split": ": ",
+      "location_regex": " in ([^|]+?) (?:is looking|is offering|zoekt|zoeken)",
+      "details": true,
+      "delay_s": 5,
+      "max_details": 30
+    }
+  }
+}

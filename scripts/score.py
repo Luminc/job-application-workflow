@@ -342,7 +342,7 @@ def load_matches_file(path: Path) -> tuple[list[dict], dict]:
             # channel records where the vacancy actually came from.
             "source": "matches",
             "channel": j.get("source") if (j.get("source") in CHANNELS
-                                           or str(j.get("source", "")).startswith("portal:")) else "",
+                                           or str(j.get("source", "")).startswith(("portal:", "feed:"))) else "",
         })
     print(f"  {len(listings)} vacancies in {path.name}")
     return listings, loops
@@ -775,7 +775,8 @@ def _source_label(source: str) -> str:
         "linkedin-guest": "LinkedIn (public job page)",
         "nvb": "Nationale Vacaturebank",
         "manual": "Handmatig (Indeed / LinkedIn)",
-    }.get(source, f"{source[7:]} (community portal)" if source.startswith("portal:") else source)
+    }.get(source, f"{source[7:]} (community portal)" if source.startswith("portal:")
+          else f"{source[5:]} (feed)" if source.startswith("feed:") else source)
 
 
 def _yaml_scalar(value) -> str:

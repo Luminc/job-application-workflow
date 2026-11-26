@@ -40,6 +40,7 @@ const path = require('path');
 
 const P = require('../lib/profile.js');
 const portals = require('./portals.js');
+const feeds = require('./feeds.js');
 const ROOT = P.ROOT;
 const SEARCH = P.profile().search || {};
 // The API key is only for the triage call, so it is read from .env into a
@@ -192,7 +193,7 @@ function cardId(platform, raw) {
   if (platform === 'NVB' && /^[0-9a-f-]{36}$/i.test(v)) return `nvb:${v.toLowerCase()}`;
   // Community portals: the card's URL is its identity (a LinkedIn URL from a
   // portal still dedups against the LinkedIn route).
-  if (PORTAL_NAMES.has(platform)) return vacancyId(v);
+  if (PORTAL_NAMES.has(platform) || FEED_NAMES.has(platform)) return vacancyId(v);
   return null;
 }
 
@@ -319,6 +320,8 @@ const PLATFORM_ORDER = ['Indeed', 'LinkedIn', 'NVB'];
 // search.platforms; each configured portal is a platform of its own.
 const PORTALS = portals.config();
 const PORTAL_NAMES = new Set(Object.keys(PORTALS.portals));
+// RSS feeds (scripts/feeds.js), enabled with "feeds" in search.platforms.
+const FEED_NAMES = new Set(Object.keys(feeds.config()));
 // Platforms read through the extension; all of them blocked = Chrome is down.
 const CHROME_PLATFORMS = ['Indeed', 'LinkedIn'];
 
@@ -416,6 +419,10 @@ function searchUrls(terms, platforms, pages, state, explicitDays) {
         out.push({ platform: name, term, page: 1, days: daysFor(name, term), url: null });
       }
     }
+  }
+  if (platforms.includes('feeds')) {
+    // A feed has no search terms: it is read whole, once per round.
+    for (const name of FEED_NAMES) out.push({ platform: name, term: '', page: 1, days: null, url: null });
   }
   // Platform by platform, so a wall on one platform skips its remaining
   // sessions without touching the other.
@@ -986,7 +993,7 @@ function report(merged, cappedKeys) {
       const counts = ['results', 'seen', 'triaged_out', 'opened'].map((k) => `${k} ${s[k] ?? '?'}`).join(', ');
       const flag = BAD_STATUSES.includes(s.status) ? '  <-- [!]' : '';
       const layout = s.layout ? `  [${s.layout}]` : '';
-      console.log(`    ${(s.platform || '?').padEnd(8)} ${termLabel(s.term)} p${s.page || 1}: ${s.status || '?'} (${counts})${layout}${flag}`);
+      console.log(`    ${(s.platform || '?').padEnd(8)} ${FEED_NAMES.has(s.platform) ? '(feed)' : termLabel(s.term)} p${s.page || 1}: ${s.status || '?'} (${counts})${layout}${flag}`);
     }
   }
   const bad = searches.filter((s) => BAD_STATUSES.includes(s.status));
@@ -1146,7 +1153,8 @@ async function main() {
   if (plan) {
     const counts = plan.platforms.map((k) => (k === 'portals'
       ? `portals ${[...PORTAL_NAMES].reduce((n, p) => n + (plan.terms[p] || []).length, 0)}`
-      : `${PLATFORM_KEYS[k] || k} ${(plan.terms[k] || []).length}`)).join(', ');
+      : k === 'feeds' ? `feeds ${FEED_NAMES.size}`
+        : `${PLATFORM_KEYS[k] || k} ${(plan.terms[k] || []).length}`)).join(', ');
     console.log(`  search round: ${plan.label} — terms: ${counts}; ${plan.pages} page(s) per term; ` +
                 `${cardBatches.length} card session(s) in Chrome, the rest without a browser`);
     console.log(`  search window: ${plan.windows.join('/') || '-'} days (per term, since the last successful round), max ${maxDetails} detail pages in Chrome`);
@@ -1301,6 +1309,28 @@ async function main() {
     for (const f of failed) console.error(`      ${f}`);
   }
 
+  // 1d. RSS feeds: one request each; items wait for the triage.
+  const feedItems = new Map();    // id -> { name, item }
+  const feedPages = list.filter((s) => FEED_NAMES.has(s.platform));
+  if (feedPages.length) {
+    console.log(`[feeds] ${feedPages.length} feed(s) ...`);
+    let n = 0;
+    for (const s of feedPages) {
+      const r = await feeds.readFeed(s.platform);
+      const st = pageStats.get(s.nr);
+      if (r.status !== 200) { console.error(`      ${s.platform}: ${r.error || r.status}`); continue; }
+      st.status = r.items.length ? 'ok' : 'empty';
+      for (const it of r.items) {
+        // The item's own text (place, hours, type) helps the triage.
+        const where = [it.location, it.summary.slice(0, 160)].filter(Boolean).join(' | ');
+        if (addCard(s.platform, st, s, [it.url, it.title, it.company, where])) n += 1;
+        const id = cardId(s.platform, it.url);
+        if (id && !feedItems.has(id)) feedItems.set(id, { name: s.platform, item: it });
+      }
+    }
+    console.log(`  ${n} new card(s)`);
+  }
+
   // Batches are appended to while iterating: a wall the user solved queues a
   // retry of the unread pages right after the current batch.
   for (const [i, b] of cardBatches.entries()) {
@@ -1416,6 +1446,28 @@ async function main() {
 
   // ── 3. Details ──────────────────────────────────────────────────────────────
   const expiredIds = new Set();
+
+  // Feeds: open the kept items for their full text, at the feed's pace.
+  const feedKeep = keep.filter((c) => FEED_NAMES.has(c.platform) && !fetched.has(c.id) && feedItems.has(c.id))
+    .filter((c, i, all) => all.filter((x) => x.platform === c.platform).indexOf(c) < ((feeds.config()[c.platform] || {}).max_details ?? 30));
+  if (feedKeep.length) {
+    console.log(`\n[feeds] ${feedKeep.length} vacancies: full text from the vacancy page ...`);
+    let ok = 0;
+    for (const [i, c] of feedKeep.entries()) {
+      if (i) await sleep(feeds.delayMs(c.platform));
+      const { name, item } = feedItems.get(c.id);
+      const r = await feeds.job(name, item);
+      if (r.job) {
+        fetched.add(c.id);
+        merged.jobs.push({ ...r.job, job_title: r.job.title, search_id: 'manual', cv_variant: '', source: `feed:${name}` });
+        ok += 1;
+      } else if (r.status === 404 || r.status === 410) {
+        merged.run.expired.push(item.url);
+        expiredIds.add(c.id);
+      }
+    }
+    console.log(`  ${ok} fetched`);
+  }
   const isLinkedIn = (u) => platformOf(vacancyId(u) || '') === 'LinkedIn';
 
   // 3a. LinkedIn without a browser (see linkedinGuest).

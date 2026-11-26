@@ -12,6 +12,7 @@
     "review": "node scripts/run-python.js scripts/score.py --review",
     "ats-probe": "node scripts/run-python.js scripts/ats_boards.py --probe",
     "portals": "node scripts/portals.js",
+    "feeds": "node scripts/feeds.js",
     "new": "node new-application.js",
     "prep": "node scripts/prepare-application.js",
     "evaluate": "node scripts/run-python.js scripts/evaluate_active.py",
