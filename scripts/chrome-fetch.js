@@ -4,7 +4,7 @@
 // Why a browser: Indeed blocks scrapers on detail pages (401/403 as a guest)
 // and logging in from an automated Chromium stalls on reCAPTCHA. Your everyday
 // browser is already signed in to Indeed and LinkedIn. LinkedIn keyword
-// searches, community portals and RSS feeds need no browser at all.
+// searches and Nationale Vacaturebank (NL) need no browser at all.
 //
 // The model only does what needs a browser; everything deterministic lives
 // here (2026-10-05, to cut tokens and make every decision auditable):
@@ -23,7 +23,7 @@
 //
 // Usage:  node scripts/chrome-fetch.js [--search] [--urls <bestand>]
 //           [--queries quick|full|deep] [--term "..."]... [--pages N] [--days N]
-//           [--max-details N] [--platforms indeed,linkedin,portals,feeds] [--linkedin-browser]
+//           [--max-details N] [--platforms indeed,linkedin,nvb] [--linkedin-browser]
 //           [--linkedin-fallback-chrome] [--retriage] [--retriage-days N]
 //           [--cards-model <naam>] [--model <naam>] [--effort <niveau>]
 //           [--print-prompt] [--verbose]
@@ -163,6 +163,8 @@ function vacancyId(url) {
   if (jk) return `indeed:${jk[1].toLowerCase()}`;
   const li = url.match(/linkedin\.com\/jobs\/view\/(?:[^/?]*-)?(\d{6,})/i);
   if (li) return `linkedin:${li[1]}`;
+  const nvb = url.match(/nationalevacaturebank\.nl\/vacature\/([0-9a-f-]{36})/i);
+  if (nvb) return `nvb:${nvb[1].toLowerCase()}`;
   return urlId(url);
 }
 
@@ -188,6 +190,7 @@ function cardId(platform, raw) {
   const placeholder = '0123456789abcdef'.repeat(2).includes(v.toLowerCase());
   if (platform === 'Indeed' && /^[0-9a-f]{16}$/i.test(v) && !placeholder) return `indeed:${v.toLowerCase()}`;
   if (platform === 'LinkedIn' && /^\d{6,}$/.test(v)) return `linkedin:${v}`;
+  if (platform === 'NVB' && /^[0-9a-f-]{36}$/i.test(v)) return `nvb:${v.toLowerCase()}`;
   // Community portals: the card's URL is its identity (a LinkedIn URL from a
   // portal still dedups against the LinkedIn route).
   if (PORTAL_NAMES.has(platform) || FEED_NAMES.has(platform)) return vacancyId(v);
@@ -200,10 +203,11 @@ function canonicalUrl(id) {
   const v = id.slice(i + 1);
   if (kind === 'url') return `https://${v}`;
   if (kind === 'indeed') return `https://${INDEED_DOMAIN}/viewjob?jk=${v}`;
+  if (kind === 'nvb') return `https://www.nationalevacaturebank.nl/vacature/${v}`;
   return `https://www.linkedin.com/jobs/view/${v}/`;
 }
 
-const PLATFORM_BY_KIND = { linkedin: 'LinkedIn', indeed: 'Indeed' };
+const PLATFORM_BY_KIND = { linkedin: 'LinkedIn', indeed: 'Indeed', nvb: 'NVB' };
 const platformOf = (id) => PLATFORM_BY_KIND[(id || '').split(':')[0]] || null;
 
 function knownIds() {
@@ -310,8 +314,8 @@ function windowDays(lastIso, explicit) {
   return DAY_STEPS.find((d) => d >= gap) || DAY_STEPS[DAY_STEPS.length - 1];
 }
 
-const PLATFORM_KEYS = { indeed: 'Indeed', linkedin: 'LinkedIn' };
-const PLATFORM_ORDER = ['Indeed', 'LinkedIn'];
+const PLATFORM_KEYS = { indeed: 'Indeed', linkedin: 'LinkedIn', nvb: 'NVB' };
+const PLATFORM_ORDER = ['Indeed', 'LinkedIn', 'NVB'];
 // Community portals (scripts/portals.js), enabled with "portals" in
 // search.platforms; each configured portal is a platform of its own.
 const PORTALS = portals.config();
@@ -321,7 +325,7 @@ const FEED_NAMES = new Set(Object.keys(feeds.config()));
 // Platforms read through the extension; all of them blocked = Chrome is down.
 const CHROME_PLATFORMS = ['Indeed', 'LinkedIn'];
 
-// terms: { indeed: [...], linkedin: [...], <portal>: [...] }
+// terms: { indeed: [...], linkedin: [...], nvb: [...] }
 function staleTerms(state, terms, platforms) {
   const max = DAY_STEPS[DAY_STEPS.length - 1];
   const out = [];
@@ -336,7 +340,7 @@ function staleTerms(state, terms, platforms) {
 }
 
 // A preset is one list for every platform or an object per platform; Indeed
-// costs a browser session per 8 pages while LinkedIn and portals are free apart
+// costs a browser session per 8 pages while LinkedIn and NVB are free apart
 // from triage, so their lists can be longer (2026-10-07).
 function searchTerms(argv) {
   const perPlatform = (list) => Object.fromEntries(Object.keys(PLATFORM_KEYS).map((k) => [k, list]));
@@ -400,6 +404,13 @@ function searchUrls(terms, platforms, pages, state, explicitDays) {
                `&f_TPR=r${days * 86400}` + (p ? `&start=${p * 25}` : ''),
         });
       }
+    }
+  }
+  if (platforms.includes('nvb')) {
+    // One entry per term: nvbSearch pages through the API itself and stops at
+    // the edge of the search window, so --pages does not apply.
+    for (const term of (terms.nvb || []).filter(Boolean)) {
+      out.push({ platform: 'NVB', term, page: 1, days: daysFor('NVB', term), url: null });
     }
   }
   if (platforms.includes('portals')) {
@@ -798,6 +809,89 @@ async function linkedinGuestSearch(term, days, maxResults) {
   return { status: 200, cards };
 }
 
+// Nationale Vacaturebank (Netherlands, DPG Media) without a browser. Optional:
+// enable it with "nvb" in profile.json search.platforms and search.nvb. the site's own JSON
+// API answers without login or Cloudflare and returns the full vacancy text,
+// salary, hours and deadline in the search result itself, so NVB needs no
+// detail step (2026-10-07). `query` is free text over title and description;
+// sorted by date, paging stops at the edge of the search window. The website
+// itself sits behind a DPG consent wall, the API does not.
+const NVB_API = 'https://api.nationalevacaturebank.nl/api/jobs/v3/sites/nationalevacaturebank.nl/jobs';
+const NVB = SEARCH.nvb || {};
+const NVB_LAT_LON = `latitude:${NVB.lat} longitude:${NVB.lon}`;
+const NVB_DISTANCE_KM = NVB.distance_km || 30;
+const NVB_PAGE = 50;
+const NVB_MAX_PAGES = 4;
+
+async function nvbSearch(term, days) {
+  const since = Date.now() - days * 86400000;
+  const jobs = [];
+  for (let page = 1; page <= NVB_MAX_PAGES; page++) {
+    if (page > 1) await sleep(LINKEDIN_GUEST_DELAY_MS);
+    const filters = `${NVB_LAT_LON} distance:${NVB_DISTANCE_KM}`;
+    let res;
+    try {
+      res = await fetch(`${NVB_API}?page=${page}&limit=${NVB_PAGE}&sort=date` +
+        `&query=${encodeURIComponent(term)}&filters=${encodeURIComponent(filters)}`, {
+        headers: { 'User-Agent': BROWSER_UA, Accept: 'application/json', 'Accept-Language': 'nl-NL,nl;q=0.9' },
+      });
+    } catch {
+      return { status: 0, jobs };
+    }
+    if (!res.ok) return { status: res.status, jobs };
+    let data;
+    try { data = await res.json(); } catch { return { status: 'no json', jobs }; }
+    const batch = ((data._embedded || {}).jobs) || [];
+    let older = false;
+    for (const j of batch) {
+      if (Date.parse(j.startDate || '') < since) { older = true; continue; }
+      jobs.push(j);
+    }
+    if (older || batch.length < NVB_PAGE || page >= (data.pages || 0)) break;
+  }
+  return { status: 200, jobs };
+}
+
+// One NVB vacancy by ID, for own links and --retriage: the same record as in
+// the search result, so no browser and no consent wall.
+async function nvbById(id) {
+  try {
+    const res = await fetch(`${NVB_API}/${id.split(':')[1]}`, {
+      headers: { 'User-Agent': BROWSER_UA, Accept: 'application/json', 'Accept-Language': 'nl-NL,nl;q=0.9' },
+    });
+    if (!res.ok) return { status: res.status };
+    return { status: 200, job: nvbJob(await res.json()) };
+  } catch {
+    return { status: 0 };
+  }
+}
+
+// An NVB API record as a matches job: the key facts first, then the
+// employer's text, so the scorer sees hours and salary even in a long text.
+function nvbJob(j) {
+  const loc = j.workLocation || {};
+  const s = j.salary || {};
+  const h = j.workingHours || {};
+  const facts = [
+    s.min || s.max ? `Salary: €${s.min || '?'} - €${s.max || '?'} (${s.type || 'per month'})` : '',
+    h.min || h.max ? `Hours: ${h.min || '?'} - ${h.max || '?'} per week` : '',
+    (j.contractTypes || []).length ? `Contract: ${j.contractTypes.join(', ')}` : '',
+    j.careerLevel ? `Level: ${j.careerLevel}` : '',
+    (j.educationLevels || []).length ? `Education: ${j.educationLevels.join(', ')}` : '',
+    j.endDate ? `Closes: ${j.endDate.slice(0, 10)}` : '',
+  ].filter(Boolean);
+  return {
+    url: canonicalUrl(`nvb:${j.id}`),
+    title: j.title || j.functionTitle || '',
+    company: (j.company || {}).name || '',
+    location: loc.city || '',
+    platform: 'Nationale Vacaturebank',
+    apply_link: (j.apply || {}).url || '',
+    description: [...facts, htmlText(j.description).split('\n').join('\n\n'),
+      '[Full text fetched from the Nationale Vacaturebank API.]'].join('\n\n'),
+  };
+}
+
 // A security check or login wall needs a person: Claude doesn't solve
 // CAPTCHAs, and the sessions work in a background tab group where a check goes
 // unnoticed. The session leaves that tab open and stops; this asks you to
@@ -1065,9 +1159,9 @@ async function main() {
                 `${cardBatches.length} card session(s) in Chrome, the rest without a browser`);
     console.log(`  search window: ${plan.windows.join('/') || '-'} days (per term, since the last successful round), max ${maxDetails} detail pages in Chrome`);
   }
-  // Without Indeed, the recommended list or own links other than LinkedIn
-  // nothing needs a browser.
-  const browserUrls = urls.filter((u) => platformOf(vacancyId(u) || '') !== 'LinkedIn');
+  // Without Indeed, the recommended list or own links other than LinkedIn and
+  // NVB nothing needs a browser.
+  const browserUrls = urls.filter((u) => !['LinkedIn', 'NVB'].includes(platformOf(vacancyId(u) || '')));
   if (cardBatches.length || browserUrls.length || list.some((s) => s.platform === 'Indeed')) {
     console.log('  Chrome must be open with the Claude extension connected.\n');
   } else console.log('');
@@ -1160,6 +1254,31 @@ async function main() {
                   (fallback.length ? ', via Chrome' : ', next run') : ''));
     chunk(fallback, PER_CARD_PAGES).forEach((pages) => cardBatches.push({ platform: 'LinkedIn', pages }));
     numberBatches();
+  }
+
+  // 1b. Nationale Vacaturebank via its API. The search result already holds
+  // the full text, kept here until triage decides what goes to the scorer.
+  const nvbFull = new Map();      // id -> matches job
+  const nvbPages = list.filter((s) => s.platform === 'NVB');
+  if (nvbPages.length) {
+    const t0 = Date.now();
+    console.log(`[NVB] ${nvbPages.length} search term(s) via the API ...`);
+    let n = 0;
+    let failed = 0;
+    for (const s of nvbPages) {
+      const r = await nvbSearch(s.term, s.days);
+      const st = pageStats.get(s.nr);
+      if (r.status !== 200) { failed += 1; continue; }
+      st.status = r.jobs.length ? 'ok' : 'empty';
+      for (const j of r.jobs) {
+        if (addCard('NVB', st, s, [j.id, j.title || j.functionTitle, (j.company || {}).name, (j.workLocation || {}).city])) n += 1;
+        const id = cardId('NVB', j.id);
+        if (id && !nvbFull.has(id)) nvbFull.set(id, nvbJob(j));
+      }
+      await sleep(LINKEDIN_GUEST_DELAY_MS);
+    }
+    const mins = ((Date.now() - t0) / 60000).toFixed(1);
+    console.log(`  ${n} new card(s), ${mins} min${failed ? `; ${failed} term(s) failed` : ''}`);
   }
 
   // 1c. Community portals: each runs its own CLI, no browser and no cost.
@@ -1295,6 +1414,13 @@ async function main() {
   const otherKeep = keep.filter((c) => c.platform === 'Indeed');
   const toOpen = [...liKeep, ...otherKeep.slice(0, maxDetails)];
   const cappedCards = otherKeep.slice(maxDetails);
+  // NVB needs no detail step: the full text came with the search result.
+  for (const c of keep.filter((x) => x.platform === 'NVB')) {
+    const job = nvbFull.get(c.id);
+    if (!job || fetched.has(c.id)) continue;
+    fetched.add(c.id);
+    merged.jobs.push({ ...job, job_title: job.title, search_id: 'manual', cv_variant: '', source: 'nvb' });
+  }
   // Portals: the full text through the portal's own detail command.
   const portalKeep = keep.filter((c) => PORTAL_NAMES.has(c.platform) && !fetched.has(c.id));
   if (portalKeep.length) {
@@ -1380,9 +1506,28 @@ async function main() {
                 (rateLimited.length ? `, ${rateLimited.filter((t) => !t.own).length} next run (LinkedIn rate limit)` : ''));
   }
 
+  // 3b. Own NVB links through the API; only a failure goes to Chrome.
+  const isNvb = (u) => platformOf(vacancyId(u) || '') === 'NVB';
+  const nvbLeft = [];
+  for (const u of urls.filter(isNvb)) {
+    const id = vacancyId(u);
+    if (fetched.has(id)) continue;
+    const r = await nvbById(id);
+    if (r.job) {
+      fetched.add(id);
+      merged.jobs.push({ ...r.job, job_title: r.job.title, search_id: 'manual', cv_variant: '', source: 'nvb' });
+      doneUrls.push(u);
+    } else if (r.status === 404 || r.status === 410) {
+      merged.run.expired.push(u);
+      expiredIds.add(id);
+      doneUrls.push(u);
+    } else nvbLeft.push(u);
+    await sleep(LINKEDIN_GUEST_DELAY_MS);
+  }
+
   // 3c. Everything else through Chrome.
   const detailBatches = [];
-  const ownForChrome = [...urls.filter((u) => !isLinkedIn(u)),
+  const ownForChrome = [...urls.filter((u) => !isLinkedIn(u) && !isNvb(u)), ...nvbLeft,
     ...liLeft.filter((t) => t.own).map((t) => t.own)];
   chunk(ownForChrome, PER_BATCH_DETAILS).forEach((part) => detailBatches.push({ kind: 'urls', platform: null, urls: part }));
   const indeedOpen = toOpen.filter((c) => c.platform === 'Indeed').map((c) => canonicalUrl(c.id));
@@ -1502,4 +1647,4 @@ async function main() {
 }
 
 if (require.main === module) main();
-else module.exports = { urlId, vacancyId, triage, triageRules, triagedEntries, chromeRunning, cardId, canonicalUrl, searchUrls, linkedinGuest, linkedinGuestSearch, applicationIds, triageExamples };
+else module.exports = { urlId, vacancyId, triage, triageRules, triagedEntries, nvbById, chromeRunning, cardId, canonicalUrl, searchUrls, linkedinGuest, linkedinGuestSearch, applicationIds, triageExamples, nvbSearch };

@@ -35,7 +35,7 @@ their own domain (identity, evidence, claim limits, letter style).
 ## Pipeline
 
 ```
-npm run chrome-search        find: Indeed/LinkedIn (+ community portals, RSS feeds) -> title triage -> full texts -> state/matches.json
+npm run chrome-search        find: Indeed/LinkedIn (+ community portals, optional NVB) -> title triage -> full texts -> state/matches.json
 npm run portals -- "<term>"  check the configured community portals (scripts/portals.js)
 npm run score                score every new vacancy, then review y/n/later -> active/<Org>/
 npm run evaluate             deep fit check per active folder (deep_evaluation.md)

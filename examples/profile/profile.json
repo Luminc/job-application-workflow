@@ -29,7 +29,8 @@
     "linkedin_location": "Utrecht, Netherlands",
     "radius_km": 25,
     "linkedin_distance_mi": 25,
-    "accept_language": "en;q=0.9,nl;q=0.8"
+    "accept_language": "en;q=0.9,nl;q=0.8",
+    "nvb": { "lat": 52.0907, "lon": 5.1214, "distance_km": 30 }
   },
 
   "cv": {

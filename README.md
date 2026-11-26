@@ -56,8 +56,8 @@ rules and a style guide that every letter is held to.
 ```
 find        chrome-search   Indeed + LinkedIn through your own logged-in browser
                             (Claude in Chrome), LinkedIn's public pages, any board
-                            from community-portals, RSS feeds, public ATS
-                            boards
+                            from community-portals, optional Nationale
+                            Vacaturebank (NL), public ATS boards
 sieve       triage          one cheap model call per 40 job cards: reject only on
                             explicit rules, calibrated by what you chose before
 score       score           full text vs. your scoring prompt, home distance
@@ -191,7 +191,7 @@ makes the scoring good.
 Scoring and triage use a small model (fractions of a cent per vacancy). Browser
 sessions for Indeed cost more; `state/chrome_cost.log` records every session, so
 you can tune batch sizes and models on real numbers. LinkedIn keyword searches,
-LinkedIn job pages, community portals and feeds need no browser.
+LinkedIn job pages and Nationale Vacaturebank need no browser.
 
 ## Limits
 

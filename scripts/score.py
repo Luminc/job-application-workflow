@@ -72,7 +72,7 @@ MAX_COMMUTE_KM = HOME.get("max_commute_km", 40)
 
 DEFAULT_MIN_SCORE = 5
 # Values of "source" in matches.json that name a separate intake channel.
-CHANNELS = ("chrome", "manual", "linkedin-guest")
+CHANNELS = ("chrome", "manual", "linkedin-guest", "nvb")
 
 HEADERS = {
     "User-Agent": (
@@ -482,6 +482,9 @@ def vacancy_key(url: str) -> str:
     m = re.search(r"linkedin\.com/jobs/view/(?:[^/?]*-)?(\d{6,})", url, re.I)
     if m:
         return f"linkedin:{m.group(1)}"
+    m = re.search(r"nationalevacaturebank\.nl/vacature/([0-9a-f-]{36})", url, re.I)
+    if m:
+        return f"nvb:{m.group(1).lower()}"
     return url.strip().rstrip("/")
 
 
@@ -770,6 +773,7 @@ def _source_label(source: str) -> str:
         "url": "hand-picked URL",
         "chrome": "Claude in Chrome (Indeed / LinkedIn)",
         "linkedin-guest": "LinkedIn (public job page)",
+        "nvb": "Nationale Vacaturebank",
         "manual": "Handmatig (Indeed / LinkedIn)",
     }.get(source, f"{source[7:]} (community portal)" if source.startswith("portal:")
           else f"{source[5:]} (feed)" if source.startswith("feed:") else source)
