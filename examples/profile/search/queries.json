@@ -1,17 +1,15 @@
 {
-  "_about": "Search terms for npm run chrome-search (--queries quick|full|deep, default full). A preset is one list for every platform, or an object per platform (indeed, linkedin, nvb). An empty term \"\" means the platform's own recommendations for your profile (Indeed relevance; LinkedIn 'Recommended for you', Chrome only). Indeed costs a browser session per 8 pages; LinkedIn keyword searches and NVB go without a browser and only cost the title triage, so their lists can be longer. Measure what each term finds uniquely and prune the ones that add nothing.",
+  "_about": "Search terms for npm run chrome-search (--queries quick|full|deep, default full). A preset is one list for every platform, or an object per platform (indeed, linkedin, or a portal's name; \"portals\" for all portals). An empty term \"\" means the platform's own recommendations for your profile (Indeed relevance; LinkedIn 'Recommended for you', Chrome only). Indeed costs a browser session per 8 pages; LinkedIn keyword searches and portals go without a browser and only cost the title triage, so their lists can be longer. Measure what each term finds uniquely and prune the ones that add nothing.",
   "quick": {
     "indeed": ["", "content"],
     "linkedin": ["", "digital editor", "content designer", "web editor"]
   },
   "full": {
     "indeed": ["", "content", "web editor", "redacteur", "content designer"],
-    "linkedin": ["", "digital editor", "content designer", "web editor", "webredacteur", "content strategist", "CMS", "archive", "library", "plain language", "content migration", "freelance content"],
-    "nvb": ["webredacteur", "contentmanager", "redacteur", "CMS"]
+    "linkedin": ["", "digital editor", "content designer", "web editor", "webredacteur", "content strategist", "CMS", "archive", "library", "plain language", "content migration", "freelance content"]
   },
   "deep": {
     "indeed": ["", "content", "web editor", "redacteur", "content designer", "archief", "bibliotheek"],
-    "linkedin": ["", "digital editor", "content designer", "web editor", "webredacteur", "content strategist", "CMS", "archive", "library", "publisher", "plain language", "information architecture", "content migration", "freelance content", "interim content"],
-    "nvb": ["webredacteur", "contentmanager", "redacteur", "CMS", "archief", "bibliotheek"]
+    "linkedin": ["", "digital editor", "content designer", "web editor", "webredacteur", "content strategist", "CMS", "archive", "library", "publisher", "plain language", "information architecture", "content migration", "freelance content", "interim content"]
   }
 }
