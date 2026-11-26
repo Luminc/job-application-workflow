@@ -7,6 +7,8 @@
 //
 // Setup:
 //   1. Install Bun (https://bun.sh).
+//      "dir" in portals.json may also be a list, e.g. community-portals plus a
+//      fork's .agents/skills folder with portals not (yet) upstream.
 //   2. Clone community-portals next to this repo, or anywhere, and point
 //      PORTALS_DIR (env or .env) or "dir" in <profile>/search/portals.json at
 //      its portals/ folder. A portal you wrote yourself can live anywhere with
@@ -51,21 +53,28 @@ function setting(name) {
   return null;
 }
 
+// "dir" may be one folder or a list, searched in order: community-portals
+// plus, say, a fork's .agents/skills or a folder with portals of your own.
+// PORTALS_DIR takes a list separated by the system's path separator.
 function config() {
   const cfg = readJson(CONFIG_FILE, null) || {};
-  const dir = setting('PORTALS_DIR') || cfg.dir || '../community-portals/portals';
-  return { dir: path.resolve(P.ROOT, dir), portals: cfg.portals || {} };
+  const env = setting('PORTALS_DIR');
+  const raw = env ? env.split(path.delimiter) : [].concat(cfg.dir || '../community-portals/portals');
+  const dirs = raw.filter(Boolean).map((d) => path.resolve(P.ROOT, d));
+  return { dir: dirs[0], dirs, portals: cfg.portals || {} };
 }
 
 // <dir>/<country>/<name>/cli/src/cli.ts, or <dir>/<name>/cli/src/cli.ts.
-function cliPath(name, dir = config().dir) {
-  const direct = path.join(dir, name, 'cli', 'src', 'cli.ts');
-  if (fs.existsSync(direct)) return direct;
-  if (!fs.existsSync(dir)) return null;
-  for (const d of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (!d.isDirectory()) continue;
-    const p = path.join(dir, d.name, name, 'cli', 'src', 'cli.ts');
-    if (fs.existsSync(p)) return p;
+function cliPath(name, dirs = config().dirs) {
+  for (const dir of [].concat(dirs)) {
+    const direct = path.join(dir, name, 'cli', 'src', 'cli.ts');
+    if (fs.existsSync(direct)) return direct;
+    if (!fs.existsSync(dir)) continue;
+    for (const d of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (!d.isDirectory()) continue;
+      const p = path.join(dir, d.name, name, 'cli', 'src', 'cli.ts');
+      if (fs.existsSync(p)) return p;
+    }
   }
   return null;
 }
@@ -92,7 +101,7 @@ function flags(args) {
 // Runs a portal CLI; { status: 200, data } or { status: 'error', error }.
 function run(name, argv) {
   const cli = cliPath(name);
-  if (!cli) return { status: 'missing', error: `portal ${name} not found under ${config().dir}` };
+  if (!cli) return { status: 'missing', error: `portal ${name} not found under ${config().dirs.join(', ')}` };
   // No shell: arguments go to bun as they are, so a search term cannot be
   // read as a command. bun.exe is on PATH after a normal install.
   const r = spawnSync('bun', ['run', cli, ...argv], {
@@ -120,6 +129,14 @@ function search(name, term, days, { args = {}, limit } = {}) {
   return { status: 200, results: results.filter((x) => x && x.url) };
 }
 
+// A salary as text: portals give a string or { currency, min, max, unit }.
+function salaryText(s) {
+  if (typeof s !== 'object') return String(s);
+  const cur = s.currency === 'EUR' ? '€' : s.currency ? `${s.currency} ` : '';
+  const range = [s.min, s.max].filter((v) => v != null).map((v) => `${cur}${v}`).join(' - ');
+  return `${range || JSON.stringify(s)}${s.unit ? ` per ${String(s.unit).toLowerCase()}` : ''}`;
+}
+
 // Full posting as a matches job, or { status } when it could not be read.
 function detail(name, idOrUrl) {
   const r = run(name, ['detail', String(idOrUrl), '--format', 'json']);
@@ -127,7 +144,7 @@ function detail(name, idOrUrl) {
   const d = r.data && (r.data.result || r.data.job || r.data);
   if (!d || !d.description) return { status: 'no description' };
   const facts = [
-    d.salary ? `Salary: ${typeof d.salary === 'object' ? JSON.stringify(d.salary) : d.salary}` : '',
+    d.salary ? `Salary: ${salaryText(d.salary)}` : '',
     d.hours ? `Hours: ${d.hours}` : '',
     d.employmentType ? `Employment: ${d.employmentType}` : '',
     d.deadline ? `Closes: ${d.deadline}` : '',
@@ -151,13 +168,13 @@ module.exports = { config, cliPath, bunAvailable, search, detail, CONFIG_FILE };
 // Quick check from the command line: node scripts/portals.js [term]
 if (require.main === module) {
   const cfg = config();
-  console.log(`portals dir: ${cfg.dir}${fs.existsSync(cfg.dir) ? '' : '  (not found)'}`);
+  for (const d of cfg.dirs) console.log(`portals dir: ${d}${fs.existsSync(d) ? '' : '  (not found)'}`);
   console.log(`bun: ${bunAvailable() ? 'found' : 'NOT found (https://bun.sh)'}`);
   const names = Object.keys(cfg.portals);
   if (!names.length) console.log(`no portals configured in ${P.rel(CONFIG_FILE)}`);
   const term = process.argv[2];
   for (const name of names) {
-    const cli = cliPath(name, cfg.dir);
+    const cli = cliPath(name, cfg.dirs);
     if (!cli || !term) { console.log(`  ${name}: ${cli ? 'ok' : 'NOT found'}`); continue; }
     const r = search(name, term, 7, { args: cfg.portals[name].args, limit: 5 });
     console.log(`  ${name}: ${r.status === 200 ? `${r.results.length} result(s)` : `${r.status} ${r.error || ''}`}`);
