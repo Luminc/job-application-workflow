@@ -146,7 +146,7 @@ function detail(name, idOrUrl) {
   const facts = [
     d.salary ? `Salary: ${salaryText(d.salary)}` : '',
     d.hours ? `Hours: ${d.hours}` : '',
-    d.employmentType ? `Employment: ${d.employmentType}` : '',
+    d.employmentType || d.contractType ? `Employment: ${d.employmentType || d.contractType}` : '',
     d.deadline ? `Closes: ${d.deadline}` : '',
   ].filter(Boolean);
   return {
