@@ -53,40 +53,29 @@ rules and a style guide that every letter is held to.
 
 ## One search, in numbers
 
-The author's own search in the Netherlands, as of November 2026. Applications
-since January; search state since April; sources tracked since August.
+The author's own search, over about eleven months:
 
 | | |
 |---|---|
 | Vacancies seen | 5,790 |
-| Read in full and scored | 1,224 (432 scored 7/10 or higher) |
-| Applications sent | 134 (52 still without an answer) |
+| Read in full and scored | 1,224 |
+| Applications sent | 134 |
 | Invited to an interview | 18 |
-| Browser search costs (Oct–Nov) | about $30 over 91 sessions |
 
-Since August, by source:
+Over the last four months, side by side with a commercial auto-matching service:
 
-| Source | Seen | Scored 7+ | Sent | Interviews |
-|---|---|---|---|---|
-| LinkedIn, public job pages | 628 | 177 | 21 | 3 |
-| Indeed and LinkedIn in your own browser | 3,816 | 46 | 7 | 2 |
-| Nationale Vacaturebank | 156 | 57 | 5 | 0 |
-| A niche cultural job board | 498 | 12 | 2 | 0 |
-| A commercial auto-matching service, for comparison | 176 | 41 | 9 | 1 |
+| | This search | Commercial service |
+|---|---|---|
+| Vacancies seen | 5,098 | 176 |
+| Scored 7/10 or higher | 292 | 41 |
+| Applications sent | 35 | 9 |
+| Interviews | 5 | 1 |
 
-The honest part: the automated search more than doubled the number of
-applications, but not the number of interviews.
-
-| Period | Sent | Interviews | Rejected | No answer yet | Interview rate (answered only) |
-|---|---|---|---|---|---|
-| Jan–Jun, before the search pipeline | 47 | 10 | 21 | 16 | 32% |
-| Aug–Nov, with the search pipeline | 87 | 8 | 43 | 36 | 16% |
-
-Some recent applications may still turn into interviews, and the market moved
-in between. But the lesson stands: finding more is easy, and it is not the
-bottleneck. What finding more buys you is choice. Spend it on fewer
-applications, each one specific, rather than on more of them. That is why
-the scoring and the letter rules matter more than the number of sources.
+Both convert applications into interviews at a similar rate; this search
+simply finds far more vacancies worth applying to. But finding more is not the
+bottleneck: when the search started sending more applications, the number of
+interviews did not go up with it. What finding more buys you is choice. Spend
+it on fewer applications, each one specific.
 
 ## What it does
 
