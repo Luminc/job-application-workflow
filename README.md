@@ -197,9 +197,20 @@ LinkedIn job pages and Nationale Vacaturebank need no browser.
 
 - The browser search is tested on Indeed NL and LinkedIn. Indeed's page structure
   differs a little per country; the snippets in `scripts/prompts/` may need a tweak.
-- Respect each platform's terms. Everything here reads pages you can open
-  yourself, at a human pace, in your own session; nothing applies on your behalf.
-- No email sending: you send applications yourself.
+- Nothing applies, sends or submits on your behalf; you send applications
+  yourself.
+
+## Personal use only
+
+This is a tool for one person's own job search, not for collecting data.
+Several sources it can read say in their terms that they do not allow
+automated access: LinkedIn, Indeed and Nationale Vacaturebank among them.
+Using them here is your own decision and your own responsibility. Keep it
+personal and low-volume: a few search rounds a week, at a human pace, only
+the vacancies you might apply to, and never for resale, bulk collection or a
+commercial service. Sources whose terms allow reuse (such as the Dutch
+government boards, published under CC0) carry no such caveat. When you add a
+board or a feed, read its terms first.
 
 ## Make it your own
 
